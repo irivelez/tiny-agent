@@ -1,29 +1,48 @@
 # tiny-agent
 
-**Who uses it:** Irina, to see how an LLM, TypeSafe's Jev and plain code split the work in one agent.
-**Question it answers:** what does each part of an agent do, step by step, on a realistic task?
-**Delete by:** 2026-11-02.
-**Data:** simulated. The five factory emails in `inbox/` and order 1042 are invented. Nothing is sent anywhere.
+A tiny agent that works the inbox of one factory order. It shows how four parts split the work:
 
-## What it does
+- **Jev** ([TypeSafe](https://docs.typesafe.ai)) decides what each email is, with a probability, in under a second.
+- **Code** does the exact tasks: read a price, compare it to a target, compute days late, archive.
+- **Claude** writes when writing is needed: a summary and a reply draft.
+- **A human** approves anything that would leave the building. Nothing is sent automatically.
 
-One agent works an order's inbox. For each email:
+```
+email ─► JEV: quote / delay / question / other   (with a probability)
+                │
+   confident, and a rule fits?        unsure, or a reply is needed?
+                ▼                                   ▼
+              CODE                               CLAUDE
+   read price, days late, archive        summary + draft reply
+                └──────────► approval queue ◄──────┘
+```
 
-1. **Jev decides** what the email is (quote, delay, question, other) and returns a probability.
-2. **Code decides who acts** from that probability (`policy()` in `agent.py`):
-   - Confident, and a fixed rule fits → **code** does the exact task (read the price, compare it to the target, compute days late, archive).
-   - Unsure, or a reply has to be written → **Claude** (`claude -p`) summarizes the email and drafts a reply.
-   - Code that can't read a value with certainty hands the email to Claude.
-3. Anything that leaves the building (accept a price, reply, tell the customer) waits in an **approval queue**.
-4. The order's state (step, price, ship date) is updated after each email and saved to `run/state.json`.
+## Example run
 
-Thresholds (`ACT_ALONE = 0.80`, `FLOOR = 0.50`) are starting points, not tested on real data.
+| Email | Jev decides | Who acts | Result |
+|---|---|---|---|
+| Quotation | quote, p 1.00, 0.6 s | code | USD 4.35 is under the 4.40 target → "accept?" waits for approval |
+| Shipping update | delay, p 1.00, 0.2 s | code | ships 14 days late → "tell the customer?" waits |
+| Color question | question, p 1.00, 0.3 s | Claude | drafts a reply (21 s) |
+| Two offers | question, p 0.87, 0.4 s | Claude | summarizes both offers, drafts a reply (46 s) |
+| Holiday notice | other, p 0.97, 0.6 s | code | archived |
 
-## Run
+Full output: [`last-run.txt`](last-run.txt).
+
+## Run it
 
 ```sh
-uv venv -q && uv pip install -q typesafe-sdk==0.7.1 httpx2==2.13.1
+uv venv && uv pip install -r requirements.txt
+export TYPESAFE_API_KEY=...   # from https://console.typesafe.ai
 .venv/bin/python agent.py
 ```
 
-Needs `TYPESAFE_API_KEY` (in `~/.zshenv`) and a logged-in `claude` CLI. The last run's output is in `last-run.txt`.
+You also need the [Claude Code](https://code.claude.com) CLI (`claude`), logged in.
+
+## Files
+
+- [`agent.py`](agent.py): the whole loop, about 200 lines.
+- [`inbox/`](inbox): five simulated factory emails.
+- [`order.json`](order.json): the order's starting state.
+
+The order, the factory and the emails are invented. The routing thresholds (`ACT_ALONE = 0.80`, `FLOOR = 0.50`) are starting points, not tuned on real data.

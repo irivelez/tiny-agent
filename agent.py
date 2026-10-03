@@ -168,7 +168,8 @@ async def main():
 
     say(f"ORDER {state['order']}: {state['qty']:,} pcs {state['item']} | target USD {state['target_price_usd']:.2f}"
         f" | promised ship {state['promised_ship']} | thresholds: act alone >= {ACT_ALONE}, unsure < {FLOOR}")
-    ctx = ssl.create_default_context(cafile="/etc/ssl/cert.pem")  # sandbox TLS fix, as in inbox-triage
+    cafile = Path("/etc/ssl/cert.pem")  # macOS sandboxes need an explicit CA file; elsewhere use the default
+    ctx = ssl.create_default_context(cafile=str(cafile)) if cafile.exists() else ssl.create_default_context()
     async with httpx2.AsyncClient(verify=ctx, timeout=60) as hc:
         async with AsyncTypeSafeClient(http_client=hc) as client:
             for i, email in enumerate(load_emails(), 1):
