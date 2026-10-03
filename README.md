@@ -46,3 +46,7 @@ You also need the [Claude Code](https://code.claude.com) CLI (`claude`), logged 
 - [`order.json`](order.json): the order's starting state.
 
 The order, the factory and the emails are invented. The routing thresholds (`ACT_ALONE = 0.80`, `FLOOR = 0.50`) are starting points, not tuned on real data.
+
+## License
+
+[MIT](LICENSE)
