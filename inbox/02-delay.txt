@@ -1,0 +1,7 @@
+From: Bright Loom Textiles <sales@brightloom.example>
+Subject: Order 1042 shipping update
+
+Dear buyer,
+We are sorry to inform you that the fabric mill delivered the navy yarn late. We must move the ship date of order 1042 from 1 Nov 2026 to 15 Nov 2026. All other terms stay the same.
+Regards,
+Lin Wei
